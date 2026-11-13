@@ -7,10 +7,10 @@ Dự án được tối ưu toàn diện dựa trên sự kết hợp của 3 va
 - **Kiến trúc giải pháp:** Xây dựng ứng dụng đơn tệp (Single-File Offline) chuẩn HTML5/CSS3/SVG thuần, không phụ thuộc bất kỳ thư viện ngoài (CDN, Google Fonts, npm), đảm bảo khả năng chạy độc lập 100% trên mọi máy tính không có Internet.
 - **Tối ưu hiển thị Digital Signage 16:9:** Thiết lập tỷ lệ ViewBox chuẩn `1920 × 1080` pixel (Full HD), không sinh thanh cuộn ngang/dọc, tự động co giãn thông minh (Responsive Proportional Scaling) khi thay đổi kích thước cửa sổ.
 - **Tách bạch Vị trí ghế (`pos`) và Số ghế hiển thị (`seat`) — Sơ đồ Động theo Excel:**
-  - `Vị trí ghế` (`1..N`): Quyết định vị trí ô ghế trên lưới hội trường (`20 ghế/dãy`, bắt đầu từ Dãy 5). Để trống đối với Tân Tiến sĩ (`TS1`).
+  - `Vị trí ghế` (`1..N`): Quyết định vị trí ô ghế trên lưới hội trường (`18 ghế/dãy`, mỗi bên 9 ghế, bắt đầu từ Dãy 5 khi có 4 dãy Đại biểu). Để trống đối với Tân Tiến sĩ (`TS1`).
   - `Số ghế`: Nhãn thực tế in lên ô ghế và bảng vinh danh, lấy nguyên văn từ Excel (không bắt buộc liên tục `1–280`; ví dụ `1, 3, 4, 5, 7, 8...`).
   - `Loại ghế`: Cột tùy chọn chỉ định màu ghế trực tiếp (`Khen thưởng` / `Thạc sĩ` / `Cử nhân` / `Tiến sĩ`), hoặc tự động suy ra theo thứ tự ưu tiên `Tiến sĩ > Khen thưởng > Thạc sĩ > Cử nhân`.
-  - **Tự động tính số dãy ghế & đôn dãy Người thân:** Số dãy ghế `R = ceil(maxPos / 20)` (`Dãy 5 .. 5+R-1`), và 5 dãy `Người thân Tân TS/ThS/ĐH` tự động dịch nhãn nối tiếp (`5+R .. 5+R+4`), ví dụ 260 ghế → Ghế Dãy 5–17, Người thân Dãy 18–22 (tự động bỏ Dãy 23). Các vị trí thiếu hoặc dãy cuối chưa đủ 20 ghế được vẽ thành ô trống nét đứt mờ (`seat-empty`).
+  - **Tự động tính số dãy ghế & đôn dãy Người thân:** Số dãy ghế `R = ceil(maxPos / 18)` (`Dãy 5 .. 5+R-1` khi có 4 dãy Đại biểu), và mặc định 5 dãy `Người thân Tân TS/ThS/ĐH` tự động dịch nhãn nối tiếp (`5+R .. 5+R+4`), ví dụ 260 ghế → Ghế Dãy 5–19, Người thân Dãy 20–24. Tối đa 20 dãy tân khoa, tương ứng 360 vị trí. Các vị trí thiếu hoặc dãy cuối chưa đủ 18 ghế được vẽ thành ô trống nét đứt mờ (`seat-empty`). Giữ nguyên chiều rộng 400px mỗi khối, tự chia đều 9 ô với khe 1.8px. Khối phải giữ thứ tự đảo chiều; cả tra cứu nhanh và bảng vinh danh phải tính bên theo ngưỡng 9 ghế.
 - **Động cơ Dữ liệu Excel Đa Tầng (Dual-Engine Data System):**
   - *Tải mẫu siêu tốc (0ms):* Nhúng trực tiếp tệp nhị phân Base64 vào HTML, tạo Blob tải về tức thì không phụ thuộc thư viện ngoài.
   - *Bộ phân tích ngoại tuyến (SheetJS Offline):* Nhúng trọn vẹn thư viện SheetJS vào tệp, hỗ trợ đọc file `.xlsx`, `.xls`, `.csv` tự động phân loại trình độ và khen thưởng.
@@ -24,8 +24,8 @@ Dự án được tối ưu toàn diện dựa trên sự kết hợp của 3 va
   - Nền không gian: Xanh navy sâu thẳm (`#020a1c` đến `#0a2556`) phối dải lụa vàng kim uốn lượn phong cách hoàng gia.
   - Sân khấu: Xanh lam đậm viền kép kim loại vàng (`#ffea9f`), kẹp giữa là 2 bục "Cánh gà trái" và "Cánh gà phải" phân định rõ ràng.
   - Phân khu ghế: Xanh lá (Đại biểu), Đỏ đô (Tiến sĩ & NCS/GVHD), Vàng hoàng kim (Khen thưởng), Tím hoàng gia (Thạc sĩ), Cam tươi sáng (Cử nhân), Xám xanh thanh lịch (Người thân).
-- **Tuân thủ 100% Mockup đã duyệt (`so-do-cho-ngoi-2026.png`):** Giữ nguyên hai khối ghế đối xứng, cột số dãy 1 đến 23 ở cả 2 bên, khu vực Đại biểu dãy 1–4, bảng Ghi chú chuẩn bên phải.
-- **Chuẩn hóa nhãn khu vực Dãy 19–23:** Đổi chính xác thành **`Người thân Tân TS/ThS/ĐH`** (tại sơ đồ) và **`Ghế ngồi người thân \n Tân TS/ThS/ĐH`** (tại bảng Ghi chú).
+- **Giữ bố cục Mockup đã duyệt (`so-do-cho-ngoi-2026.png`):** Giữ nguyên hai khối ghế đối xứng, khu vực Đại biểu, bảng Ghi chú, sân khấu, hành lang và màu sắc. Theo yêu cầu mới, mỗi dãy có 18 ghế (9 mỗi bên); cột số dãy ở cả hai bên tự tăng theo số dãy tân khoa và cấu hình Đại biểu/Người thân.
+- **Chuẩn hóa nhãn khu vực Người thân (số dãy tự động):** Đổi chính xác thành **`Người thân Tân TS/ThS/ĐH`** (tại sơ đồ) và **`Ghế ngồi người thân \n Tân TS/ThS/ĐH`** (tại bảng Ghi chú).
 - **Tối ưu hóa Bảng Vinh Danh Tân Khoa (Honors Plaque):**
   - Tự động thay đổi 3 khung nền đồ họa hoàng gia theo trình độ: `TanTiensi.png`, `TanThacsi.png`, `TanCunhan.png`.
   - Mở rộng biên độ 1 hàng tiệm cận khung viền vàng kim (~305px).
@@ -88,8 +88,8 @@ Dự án được tối ưu toàn diện dựa trên sự kết hợp của 3 va
 | Cố định 100% Cỡ chữ Tên Tân Khoa Chuẩn (20.5px) | ✅ Hoàn thành | Giữ nguyên 100% cỡ chữ lớn `20.5px` cho toàn bộ tên trên 1 hàng (lên tới 27 ký tự); đồng nhất 100% cỡ chữ 2 dòng (`19.5px`) nếu xuống hàng |
 | Dọn dẹp & Tối ưu Repository | ✅ Hoàn thành | Xóa bỏ 16 tệp rác, code tạm, ảnh trùng lặp và ảnh test cũ (~10.5 MB), tối ưu hóa cây thư mục sạch sẽ |
 | Tách bạch `Vị trí ghế` & `Số ghế` hiển thị | ✅ Hoàn thành | Cấu trúc Excel 7 cột (`Vị trí ghế`, `Số ghế`, `Họ tên`, `Trình độ`, `Loại ghế`, `Khen thưởng`, `Ghi chú`); hiển thị số ghế thực tế không cần liên tục (`1, 3, 4, 5, 7...`) |
-| Tự động Co giãn Dãy ghế & Đôn Dãy Người thân | ✅ Hoàn thành | Tự tính `R = ceil(maxPos / 20)` dãy ghế (`Dãy 5 .. 5+R-1`) và tự dịch 5 dãy Người thân (`5+R .. 5+R+4`), bỏ dãy thừa (vd: 260 ghế → Ghế 5–17, Người thân 18–22) |
-| Ô trống mờ (`seat-empty`) & Kiểm tra Dữ liệu | ✅ Hoàn thành | Vẽ ô nét đứt mờ cho các vị trí thiếu hoặc dãy cuối chưa đủ 20 ghế; hiển thị cảnh báo trùng/thiếu vị trí trong bảng Cài đặt (`#importIssues`) |
+| Tự động Co giãn Dãy ghế & Đôn Dãy Người thân | ✅ Hoàn thành | Tự tính `R = ceil(maxPos / 18)` dãy ghế (`Dãy 5 .. 5+R-1`) và tự dịch các dãy Người thân nối tiếp; mặc định 260 ghế → Ghế 5–19, Người thân 20–24 |
+| Ô trống mờ (`seat-empty`) & Kiểm tra Dữ liệu | ✅ Hoàn thành | Vẽ ô nét đứt mờ cho các vị trí thiếu hoặc dãy cuối chưa đủ 18 ghế; hiển thị cảnh báo trùng/thiếu vị trí trong bảng Cài đặt (`#importIssues`) |
 | Kiểm tra trực quan bằng Edge Headless & Playwright | ✅ Hoàn thành | Kiểm thử tự động kịch bản 280 ghế, 260 ghế, 255 ghế (lẻ dãy + thiếu vị trí), tìm kiếm theo nhãn số ghế và chụp ảnh Full HD 1920×1080 |
 | Kiến trúc Sơ Đồ Ghế Động Thống Nhất | ✅ Hoàn thành | Tự động phân bổ co giãn 3 phân khu (Đại biểu, Tân khoa, Người thân) trong khung cố định Y=258..892 |
 | Tùy chỉnh Dãy Đại biểu & Dãy Người thân | ✅ Hoàn thành | Nhập số dãy Đại biểu (1..6) và số dãy Người thân (1..10) từ Excel hoặc Drawer, tự động đôn số dãy nối tiếp |
@@ -105,3 +105,4 @@ Dự án được tối ưu toàn diện dựa trên sự kết hợp của 3 va
 | Dọn Dẹp Toàn Diện Repository (3.0+ MB) | ✅ Hoàn thành | Xóa bỏ 5 tệp rác & bản backup lỗi thời (MASTER_PROJECT.md, ảnh test preview, script test cũ, txt tạm), tối ưu hóa repo sạch sẽ 100% |
 | Tinh Chỉnh Tốc Độ & Bảng Ghi Chú | ✅ Hoàn thành | Đổi tốc độ vinh danh mặc định thành 3s (từ 5s); đổi nhãn Bảng Ghi chú thành 'Ghế ngồi Cá nhân được tuyên dương, khen thưởng' |
 | Auto-Fit Ruy Băng Khen Thưởng Đa Màn Hình | ✅ Hoàn thành | Nới rộng khoảng cách giữa 2 ngôi sao (cx=32/266), tinh chỉnh font 11.2px/letter-spacing 0.3; tích hợp động cơ JS tự động co tỉ lệ (auto-scale) khi mở trên màn hình hoặc font khác, triệt tiêu hoàn toàn lỗi đè chữ |
+| Quy cách 18 ghế mỗi dãy (9 ghế mỗi bên) | ✅ Hoàn thành | Giữ khung rộng 400px mỗi bên, cập nhật hàng/cột, đảo thứ tự khối phải, tra cứu và vị trí vinh danh; tối đa 360 vị trí. Danh sách hiện tại 232 vị trí → Tân khoa Dãy 5–17, Người thân Dãy 18–21 theo cấu hình Excel 4 dãy Người thân; cập nhật HTML, hướng dẫn Excel mẫu, README và AGENTS |

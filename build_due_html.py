@@ -16,6 +16,13 @@ def _cell_to_str(v):
     return str(v).strip()
 
 
+def _script_json(value):
+    """Serialize data safely inside an HTML script element."""
+    return (json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+            .replace('&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
+            .replace('\u2028', '\\u2028').replace('\u2029', '\\u2029'))
+
+
 def get_default_honors_rows_json():
     """Doc sheet dau tien cua danhsach.xlsx (uu tien) hoac file mau.
     Tra ve JSON cac dong tho {tieu de cot: gia tri chuoi}. Phan tich nghiep vu do JS (parseHonorRows)
@@ -25,11 +32,13 @@ def get_default_honors_rows_json():
         if not os.path.exists(file_path):
             continue
         try:
-            wb = openpyxl.load_workbook(file_path, data_only=True)
-            sheet = wb.worksheets[0]
-            rows = list(sheet.iter_rows(values_only=True))
+            wb = openpyxl.load_workbook(file_path, data_only=True, read_only=True)
+            try:
+                rows = list(wb.worksheets[0].iter_rows(values_only=True))
+            finally:
+                wb.close()
             if len(rows) < 2:
-                continue
+                raise ValueError('Danh sach phai co tieu de va it nhat mot dong du lieu')
             headers = [_cell_to_str(h) for h in rows[0]]
             out = []
             for r in rows[1:]:
@@ -42,14 +51,15 @@ def get_default_honors_rows_json():
                 out.append(rec)
             if out:
                 print(f"Loaded {len(out)} default rows from {file_path}")
-                return json.dumps(out, ensure_ascii=False, separators=(',', ':'))
+                return _script_json(out)
+            raise ValueError('Danh sach khong co dong du lieu')
         except Exception as e:
-            print(f"Error reading {file_path}: {e}")
+            raise RuntimeError(f'Khong the build danh sach tu {file_path}: {e}') from e
     demo = [
         {"Vị trí ghế": "", "Số ghế": "TS1", "Họ tên": "TS. NGUYỄN VĂN AN", "Trình độ": "Tiến sĩ", "Loại ghế": "", "Khen thưởng": "x", "Ghi chú": ""},
         {"Vị trí ghế": "1", "Số ghế": "1", "Họ tên": "TRẦN MINH ĐỨC", "Trình độ": "Đại học", "Loại ghế": "", "Khen thưởng": "x", "Ghi chú": ""},
     ]
-    return json.dumps(demo, ensure_ascii=False, separators=(',', ':'))
+    return _script_json(demo)
 
 
 default_honors_rows_json = get_default_honors_rows_json()
@@ -973,10 +983,10 @@ html, body {{
       <!-- Dãy 1–4: VIP / Đại biểu & NCS -->
       <g id="vipBlock"></g>
 
-      <!-- Dãy 5–18: 280 Numbered Physical Seats (10 Seats x 14 Rows in 2 Blocks) -->
+      <!-- Dãy tân khoa động: 18 ghế/dãy, 9 ghế mỗi khối -->
       <g id="seatBlock"></g>
 
-      <!-- Dãy 19–23: Người thân Tân TS / ThS / ĐH -->
+      <!-- Dãy Người thân Tân TS / ThS / ĐH nối tiếp dãy tân khoa cuối -->
       <g id="familyBlock"></g>
 
 
@@ -1323,8 +1333,9 @@ html, body {{
   'use strict';
 
   const B64_EXCEL_TEMPLATE = "{b64_template_xlsx}";
-  const SEATS_PER_ROW = 20;      // Mỗi dãy 20 ô: 10 ô khối trái + 10 ô khối phải
-  const MAX_SEAT_ROWS = 20;      // Sức chứa tối đa: 20 dãy × 20 = 400 vị trí tân khoa, hội trường hỗ trợ tối đa 25 dãy
+  const SEATS_PER_ROW = 18;      // Mỗi dãy 18 ô: 9 ô khối trái + 9 ô khối phải
+  const SEATS_PER_SIDE = SEATS_PER_ROW / 2;
+  const MAX_SEAT_ROWS = 20;      // Sức chứa tối đa: 20 dãy × 18 = 360 vị trí tân khoa
 
   const APP_STATE = {{
     effectsEnabled: true,
@@ -1653,9 +1664,9 @@ html, body {{
     if (!geo) return;
 
     const rows = geo.R;
-    const cellW = 38.4;
     const cellH = geo.seats.cellH;
     const gap = 1.8;
+    const cellW = (400 - (SEATS_PER_SIDE - 1) * gap) / SEATS_PER_SIDE;
     const leftStartX = 520;
     const rightStartX = 1000;
     const baseFont = cellH < 22 ? 13.5 : 15;
@@ -1667,8 +1678,8 @@ html, body {{
 
       for (let k = 0; k < SEATS_PER_ROW; k++) {{
         const pos = row * SEATS_PER_ROW + k + 1;
-        const isLeftBlock = k < 10;
-        const colIdx = isLeftBlock ? k : (19 - k);
+        const isLeftBlock = k < SEATS_PER_SIDE;
+        const colIdx = isLeftBlock ? k : (SEATS_PER_ROW - 1 - k);
         const x = (isLeftBlock ? leftStartX : rightStartX) + colIdx * (cellW + gap);
 
         const rec = APP_STATE.layout.byPos[pos];
@@ -1875,7 +1886,7 @@ html, body {{
       const geo = APP_STATE.layout.geo;
       const firstSeatRow = geo ? geo.seats.firstRow : (APP_STATE.config.vipRows + 1);
       const row = Math.floor((pos - 1) / SEATS_PER_ROW) + firstSeatRow;
-      const side = (pos - 1) % SEATS_PER_ROW < 10 ? 'Khối Trái' : 'Khối Phải';
+      const side = (pos - 1) % SEATS_PER_ROW < SEATS_PER_SIDE ? 'Khối Trái' : 'Khối Phải';
       const catLabel = (SEAT_STYLE[getRecordCategory(rec)] || SEAT_STYLE.bachelor).label;
 
       showToast(`📍 Ghế số ${{key}}: Dãy ${{row}} • ${{side}} • Khu ${{catLabel}}`);
@@ -1889,8 +1900,8 @@ html, body {{
 
   // --- 7. DATA -> LAYOUT PIPELINE (Excel quyết định số dãy, vị trí, số ghế, màu ghế) ---
   function computeLayout(list) {{
-    const byPos = {{}};
-    const posByLabel = {{}};
+    const byPos = Object.create(null);
+    const posByLabel = Object.create(null);
     let maxPos = 0;
     list.forEach(rec => {{
       if (!rec.pos) return;
@@ -1938,14 +1949,16 @@ html, body {{
   }}
 
   function applyHonorsData(list, issues, customConfig = null) {{
+    const selectedIndex = list === HONORS_STATE.list ? HONORS_STATE.currentIndex : 0;
     HONORS_STATE.list = list;
-    HONORS_STATE.currentIndex = 0;
+    HONORS_STATE.currentIndex = selectedIndex;
+    clearTimeout(APP_STATE.highlightTimer);
     APP_STATE.highlightedPos = null;
 
     if (customConfig) {{
-      if (customConfig.vipRows) APP_STATE.config.vipRows = Math.min(6, Math.max(1, customConfig.vipRows));
+      APP_STATE.config.vipRows = normalizeRowCount(customConfig.vipRows, 6, APP_STATE.config.vipRows);
       if (customConfig.ncsSpec !== undefined && customConfig.ncsSpec !== null) APP_STATE.config.ncsSpec = customConfig.ncsSpec;
-      if (customConfig.familyRows) APP_STATE.config.familyRows = Math.min(10, Math.max(1, customConfig.familyRows));
+      APP_STATE.config.familyRows = normalizeRowCount(customConfig.familyRows, 10, APP_STATE.config.familyRows);
     }}
 
     computeLayout(list);
@@ -1956,6 +1969,13 @@ html, body {{
     updateDynamicExitArrowsAndCarpet();
     updateDrawerConfigDisplay();
     renderIssues(issues || []);
+    updateHonorsDisplay(selectedIndex);
+  }}
+
+  function normalizeRowCount(value, maximum, fallback) {{
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 1
+      ? Math.min(maximum, Math.floor(number)) : fallback;
   }}
 
   function updateDrawerConfigDisplay() {{
@@ -2003,7 +2023,9 @@ html, body {{
   // --- 8. ULTRA-HD PNG EXPORT (1920 × 1080) ---
   async function exportPng() {{
     showToast('⏳ Đang chuẩn bị tệp PNG 1920 × 1080...');
+    let url = null;
     try {{
+      await document.fonts.ready;
       const svgClone = $('masterSvg').cloneNode(true);
       svgClone.setAttribute('width', '1920');
       svgClone.setAttribute('height', '1080');
@@ -2017,9 +2039,15 @@ html, body {{
         }}
       }}
 
+      // Serialized SVGs do not inherit the document's styles or embedded fonts.
+      const exportStyle = createSvgEl('style');
+      exportStyle.textContent = [...document.querySelectorAll('style')].map(el => el.textContent).join('\\n');
+      svgClone.prepend(exportStyle);
+      svgClone.style.fontFamily = getComputedStyle($('masterSvg')).fontFamily;
+
       const xml = new XMLSerializer().serializeToString(svgClone);
       const svgBlob = new Blob([xml], {{ type: 'image/svg+xml;charset=utf-8' }});
-      const url = URL.createObjectURL(svgBlob);
+      url = URL.createObjectURL(svgBlob);
 
       const img = new Image();
       await new Promise((res, rej) => {{
@@ -2033,20 +2061,18 @@ html, body {{
       exportCanvas.height = 1080;
       const eCtx = exportCanvas.getContext('2d');
       eCtx.drawImage(img, 0, 0, 1920, 1080);
-      URL.revokeObjectURL(url);
-
-      exportCanvas.toBlob(blob => {{
-        if (blob) {{
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = 'so-do-cho-ngoi-due-2026.png';
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-          showToast('✅ Đã xuất ảnh PNG 1920 × 1080 chuẩn sắc nét!');
-        }}
-      }}, 'image/png');
+      const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Không thể tạo tệp PNG.');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'so-do-cho-ngoi-due-2026.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      showToast('✅ Đã xuất ảnh PNG 1920 × 1080 chuẩn sắc nét!');
     }} catch (e) {{
       showToast('❌ Lỗi xuất ảnh: ' + e.message);
+    }} finally {{
+      if (url) URL.revokeObjectURL(url);
     }}
   }}
 
@@ -2068,7 +2094,6 @@ html, body {{
     setHonorsSpeed(3);
     const res = parseHonorRows(DEFAULT_HONORS_ROWS);
     applyHonorsData(res.list, res.issues, res.config);
-    updateHonorsDisplay(0);
     if (HONORS_STATE.isPlaying) scheduleNextHonors();
     showToast('↺ Đã khôi phục danh sách & cấu hình mặc định.');
   }});
@@ -2306,17 +2331,30 @@ html, body {{
       const count = isSpecial ? 3 : 1;
       for (let i = 0; i < count; i++) {{
         setTimeout(() => {{
-          launchPlaqueRocket(isSpecial);
+          if (!document.body.classList.contains('effects-off')) launchPlaqueRocket(isSpecial);
         }}, i * 260);
       }}
     }};
 
+    let lastFrameTime = 0;
+    let clearedWhileDisabled = false;
+    const frameDuration = 1000 / 60;
     function animLoop(time) {{
       requestAnimationFrame(animLoop);
+      if (document.hidden) return;
       if (document.body.classList.contains('effects-off')) {{
-        ctx.clearRect(0, 0, 1920, 1080);
+        if (!clearedWhileDisabled) {{
+          ctx.clearRect(0, 0, 1920, 1080);
+          rockets.length = 0;
+          particles.length = 0;
+          clearedWhileDisabled = true;
+        }}
         return;
       }}
+      clearedWhileDisabled = false;
+      const elapsed = time - lastFrameTime;
+      if (elapsed < frameDuration) return;
+      lastFrameTime = time - (elapsed % frameDuration);
       ctx.clearRect(0, 0, 1920, 1080);
       ctx.globalCompositeOperation = 'lighter';
 
@@ -2390,13 +2428,15 @@ html, body {{
     const issues = [];
     const list = [];
     const detectedConfig = {{}};
-    if (!rows || rows.length === 0) return {{ list, issues, config: detectedConfig }};
+    if (!Array.isArray(rows) || rows.length === 0) return {{ list, issues, config: detectedConfig }};
+    rows = rows.filter(row => row && typeof row === 'object' && !Array.isArray(row));
+    if (rows.length === 0) return {{ list, issues, config: detectedConfig }};
 
     const keys = Object.keys(rows[0]);
     const hasPosCol = keys.some(h => headerField(h) === 'pos');
     const hasNameCol = keys.some(h => headerField(h) === 'name');
-    const posSeen = {{}};
-    const labelSeen = {{}};
+    const posSeen = Object.create(null);
+    const labelSeen = Object.create(null);
 
     rows.forEach((row, idx) => {{
       const excelRow = idx + 2; // dòng 1 là tiêu đề
@@ -2453,8 +2493,10 @@ html, body {{
 
       const aUpper = f.award.toUpperCase();
       const seatType = normalizeSeatType(f.seatType);
-      const isAward = ['X', 'CÓ', 'CO', '1', 'TRUE', 'YES', 'V', '✓', '✔'].includes(aUpper) ||
-                      aUpper.includes('KHEN') || aUpper.includes('XUẤT SẮC') || seatType === 'awards';
+      const negativeAward = /^(KHÔNG|KHONG|NO|FALSE|0)(?:\\s|$)/.test(aUpper);
+      const isAward = seatType === 'awards' || (!negativeAward && (
+                      ['X', 'CÓ', 'CO', '1', 'TRUE', 'YES', 'V', '✓', '✔'].includes(aUpper) ||
+                      aUpper.includes('KHEN') || aUpper.includes('XUẤT SẮC')));
 
       // Vị trí ghế (ô trên lưới). Không có cột "Vị trí ghế" -> coi Số ghế là vị trí (tương thích file cũ).
       let pos = null;
@@ -2545,6 +2587,7 @@ html, body {{
 
   function updateHonorsDisplay(index) {{
     if (!HONORS_STATE.list || HONORS_STATE.list.length === 0) return;
+    if (!Number.isInteger(index)) return;
 
     if (index < 0) index = HONORS_STATE.list.length - 1;
     if (index >= HONORS_STATE.list.length) index = 0;
@@ -2634,7 +2677,7 @@ html, body {{
         if (current.pos) {{
           const firstSeatRow = geo ? geo.seats.firstRow : (APP_STATE.config.vipRows + 1);
           const row = Math.floor((current.pos - 1) / SEATS_PER_ROW) + firstSeatRow;
-          const side = (current.pos - 1) % SEATS_PER_ROW < 10 ? 'Khối Trái' : 'Khối Phải';
+          const side = (current.pos - 1) % SEATS_PER_ROW < SEATS_PER_SIDE ? 'Khối Trái' : 'Khối Phải';
           locText.textContent = `📍 Dãy ${{row}} • ${{side}}`;
         }} else {{
           locText.textContent = current.note ? `📍 ${{current.note}}` : '📍 Khu vực hội trường';
@@ -2887,8 +2930,6 @@ html, body {{
             config: APP_STATE.config
           }}));
         }} catch (e) {{}}
-        updateHonorsDisplay(0);
-
         const placed = res.list.filter(r => r.pos).length;
         showToast(`✅ Đã nạp ${{res.list.length}} tân khoa (${{placed}} ghế trên sơ đồ)` +
                   (res.issues.length ? ` • ⚠ ${{res.issues.length}} cảnh báo (mở Cài đặt - phím E)` : ''));
@@ -3056,7 +3097,7 @@ html, body {{
       return -1;
     }}
 
-    // Xử lý sự kiện click vào ô ghế tân khoa (nhận diện trên cả seatBlock, vipBlock và document)
+    // One delegated listener also handles seats rebuilt after Excel imports.
     const handleSeatClick = (e) => {{
       // 1. Click vào ô ghế tân khoa (.seat)
       const seatEl = e.target.closest('.seat');
@@ -3089,9 +3130,6 @@ html, body {{
       }}
     }};
 
-    $('seatBlock').addEventListener('click', handleSeatClick);
-    const vipBlockEl = $('vipBlock');
-    if (vipBlockEl) vipBlockEl.addEventListener('click', handleSeatClick);
     document.addEventListener('click', (e) => {{
       if (e.target.closest('.seat') || e.target.closest('.vip-row.phd-row')) {{
         handleSeatClick(e);
@@ -3102,7 +3140,6 @@ html, body {{
     loadInitialHonorsData();
 
     // Start display & loop
-    updateHonorsDisplay(0);
     scheduleNextHonors();
 
     // Tự động điều chỉnh dải ruy băng khi thay đổi kích thước cửa sổ hoặc font tải xong

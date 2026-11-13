@@ -1,5 +1,13 @@
 # HỆ THỐNG SƠ ĐỒ CHỖ NGỒI LỄ TỐT NGHIỆP 2026 (DUE OFFICIAL EDITION)
 
+## Quy cách ghế hiện tại: 18 ghế mỗi dãy
+
+Mỗi dãy tân khoa có **18 ghế: 9 ghế khối trái và 9 ghế khối phải**. Giữ nguyên khung hai khối rộng 400px, hành lang, sân khấu, bảng vinh danh, bảng ghi chú và phong cách hiển thị. Ghế được phân bố đều trong khung hiện có.
+
+Với cấu hình mặc định 4 dãy Đại biểu, Dãy 5 gồm vị trí 1–18 (trái 1–9, phải 10–18), Dãy 6 gồm vị trí 19–36. Khối phải tiếp tục đánh số từ hành lang ngoài vào giữa: khi nhìn từ trái sang phải là 18…10. Số ghế hiển thị vẫn lấy nguyên văn từ Excel, độc lập với vị trí.
+
+Số dãy tân khoa `R = ceil(maxPos / 18)`, tối đa 20 dãy (360 vị trí). Các dãy Người thân nối tiếp ngay sau dãy tân khoa cuối. Danh sách hiện tại có 232 vị trí: Dãy 5–17, còn 2 ô trống ở Dãy 17; cấu hình Excel hiện có 4 dãy Người thân nên nằm ở Dãy 18–21. Không cần sửa vị trí hoặc số ghế trong danh sách Excel.
+
 ## Triển khai GitHub Pages
 
 Website: https://tieuhac0109.github.io/sodochongoiTN/
@@ -11,6 +19,12 @@ Mỗi lần push vào nhánh `main`, workflow `.github/workflows/deploy-pages.ym
 Build trên máy tính: `python -m pip install -r requirements.txt`, sau đó `python build_due_html.py` (hoặc chạy `Cap_Nhat_Danh_Sach.bat`). Bản HTML đã nhúng cả ảnh, font và thư viện đọc Excel; chỉ cần sao chép `index.html` để chạy offline.
 
 Gói website triển khai chỉ chứa `index.html` và `.nojekyll`. Repo công khai vẫn cho phép xem mã nguồn và Excel; danh sách tân khoa mặc định được nhúng trong HTML và có thể đọc công khai.
+
+## Kiểm thử khi sửa mã nguồn
+
+Chạy `python -m pip install -r requirements-test.txt`, `python build_due_html.py`, rồi `python -m unittest discover -s tests -v`. Bộ kiểm thử dùng Microsoft Edge đã cài trên Windows. Với máy không có Edge, chạy `python -m playwright install chromium` và đặt biến môi trường `BROWSER_CHANNEL=chromium` trước khi chạy kiểm thử. Ảnh kiểm tra xuất PNG được lưu tại `test-results/export.png` (không đưa vào Git).
+
+Kiểm thử bao gồm dữ liệu Excel không hợp lệ, nội dung có ký tự HTML, nhãn ghế đặc biệt, giới hạn sức chứa, dãy thiếu, giữ vị trí vinh danh khi đổi cấu hình, xuất PNG và tắt hiệu ứng canvas.
 
 **TRƯỜNG ĐẠI HỌC KINH TẾ — ĐẠI HỌC ĐÀ NẴNG (DUE)**
 **LỄ TRAO BẰNG TỐT NGHIỆP TIẾN SĨ, THẠC SĨ, CỬ NHÂN ĐỢT 3 NĂM 2026**
@@ -67,7 +81,7 @@ Thiết kế Digital Signage chuẩn Full HD 16:9 (1920 × 1080) dành cho **TV 
    - **Tối giản đầu mũi tên:** Mỗi tuyến đường (hành lang trái, hành lang phải, hành lang đáy) chỉ duy nhất 1 đầu mũi tên định hướng và 1 đầu mũi tên chỉ vào Cánh gà trái, giúp sơ đồ thanh thoát, không bị rối mắt.
    - **Mặt sân khấu trung tâm:** Đã loại bỏ hoàn toàn 2 mũi tên trên sàn sân khấu để giữ tính uy nghiêm, tôn nghiêm tối đa.
 
-8. **Chuẩn hóa nhãn Dãy 19–23:**
+8. **Chuẩn hóa nhãn các dãy Người thân (số dãy tự động theo dữ liệu):**
    - Cập nhật chính xác nhãn 2 khối ghế cuối hội trường thành **`Người thân Tân TS/ThS/ĐH`**, chữ đậm nổi bật trên nền xám xanh thanh lịch.
 
 9. **BẢNG VINH DANH TÂN KHOA THEO 3 TRÌNH ĐỘ (PURE DIGITAL SIGNAGE DESIGN):**
@@ -101,21 +115,21 @@ Thiết kế Digital Signage chuẩn Full HD 16:9 (1920 × 1080) dành cho **TV 
    - **Tương tác trực tiếp trên Sơ đồ Ghế (Click ô ghế để vinh danh):**
      - Nhấp chuột trực tiếp vào bất kỳ ô ghế nào của tân khoa trên sơ đồ hội trường, bảng vinh danh lập tức chuyển đến đúng người đó, đồng thời kích hoạt luồng phát sáng spotlight tại vị trí ghế và hiển thị thông báo.
      - Nhấp vào hàng ghế NCS (Dãy 4 phải hoặc dãy chỉ định) sẽ lập tức vinh danh Tân Tiến sĩ (`TS1`).
-   - **Kiến trúc Hình học Động Thống Nhất (Hỗ trợ tối đa 25 dãy hội trường):**
+   - **Kiến trúc Hình học Động Thống Nhất (tự co giãn theo tổng số dãy):**
      - **Giải quyết triệt để sự đè lấn:** Tự động tính toán phân bổ chính xác 3 phân khu trong khung cố định Full HD `Y = 258 .. 892` (chiều cao 634px), triệt tiêu hoàn toàn hiện tượng khối Người thân đè lên Dãy 18.
      - **Đồng bộ nhịp bước hàng:** Chiều cao hàng $h$ và bước hàng $step$ được chuẩn hóa đồng nhất cho cả dãy Đại biểu (Dãy 1–4), Tân khoa và Người thân, loại bỏ hoàn toàn sự chênh lệch (không còn tình trạng hàng 1–4 bị thưa).
      - **2 khoảng cách phân khu cân xứng ($G_1 = G_2 \ge \frac{1}{3} h$):**
        - Khoảng cách 1: Giữa hàng cuối Đại biểu và hàng 1 Tân khoa.
        - Khoảng cách 2: Giữa hàng cuối Tân khoa và hàng 1 Người thân (bằng đúng khoảng cách 1).
-       - Khi đầy tải 25 dãy, khoảng cách luôn đảm bảo tối thiểu $\ge \frac{1}{3} h$ (~8px); khi ít dãy hơn, khoảng cách tự động giãn rộng ra (12px .. 22px) để tạo sự phân khu rõ ràng, trang trọng.
-     - **Cột số dãy 2 bên đồng bộ hoàn hảo:** Đánh số liên tục từ Dãy 1 đến Dãy $T$ ($\le 25$) với các khoảng ngắt phân khu tương ứng, giúp người tham dự định vị tức thì.
+       - Khoảng cách luôn đảm bảo tối thiểu $\ge \frac{1}{3} h$ và tự điều chỉnh theo tổng số dãy, để tạo sự phân khu rõ ràng trong khung hiện có.
+     - **Cột số dãy 2 bên đồng bộ hoàn hảo:** Đánh số liên tục từ Dãy 1 đến Dãy $T$, với `T = số dãy Đại biểu + R + số dãy Người thân`; các khoảng ngắt phân khu tương ứng giúp người tham dự định vị tức thì.
    - **Sơ đồ Ghế Động 100% theo Dữ liệu Excel (Tách bạch Vị trí ghế & Số ghế hiển thị):**
      - **Phân biệt rõ `Vị trí ghế` và `Số ghế`:**
-       - `Vị trí ghế` (`1..N`): Quyết định ghế được vẽ ở ô thứ mấy trên lưới hội trường (Dãy 5: vị trí 1–20, Dãy 6: vị trí 21–40...). Tân Tiến sĩ (`TS1`) để trống cột này.
+       - `Vị trí ghế` (`1..N`): Quyết định ghế được vẽ ở ô thứ mấy trên lưới hội trường (Dãy 5: vị trí 1–18, Dãy 6: vị trí 19–36...). Tân Tiến sĩ (`TS1`) để trống cột này.
        - `Số ghế`: Nhãn số ghế thực tế in lên ô ghế và bảng vinh danh (không bắt buộc liên tục 1–280; ví dụ có thể là `1, 3, 4, 5, 7, 8...`).
      - **Màu ghế theo từng cá nhân (`Loại ghế`):** Hỗ trợ cột `Loại ghế` (`Khen thưởng` / `Thạc sĩ` / `Cử nhân` / `Tiến sĩ`) hoặc tự động suy ra theo thứ tự ưu tiên: `Tiến sĩ (Đỏ) > Khen thưởng (Vàng) > Thạc sĩ (Tím) > Cử nhân (Cam)`.
-     - **Tự động co giãn số dãy ghế & đôn dãy Người thân:** Số dãy ghế `R = ceil(maxPos / 20)` bắt đầu từ Dãy 5 (`5 .. 5 + R - 1`), và 5 dãy `Người thân Tân TS/ThS/ĐH` tự động đánh số nối tiếp ngay sau đó (`5 + R .. 5 + R + 4`). Ví dụ: nạp 280 vị trí → Ghế Dãy 5–18, Người thân Dãy 19–23; nạp 260 vị trí → Ghế Dãy 5–17, Người thân Dãy 18–22 (tự động bỏ Dãy 23).
-     - **Ô trống mờ (`seat-empty`):** Nếu dãy cuối không đủ 20 ghế hoặc có vị trí bị bỏ trống trong khoảng `1..maxPos`, hệ thống tự động vẽ ô nét đứt mờ thanh lịch để giữ nguyên bố cục đối xứng của hội trường.
+     - **Tự động co giãn số dãy ghế & đôn dãy Người thân:** Số dãy ghế `R = ceil(maxPos / 18)` bắt đầu từ Dãy 5 (`5 .. 5 + R - 1`), và mặc định 5 dãy `Người thân Tân TS/ThS/ĐH` tự động đánh số nối tiếp ngay sau đó (`5 + R .. 5 + R + 4`). Ví dụ: nạp 280 vị trí → Ghế Dãy 5–20, Người thân Dãy 21–25; nạp 260 vị trí → Ghế Dãy 5–19, Người thân Dãy 20–24. Số dãy Đại biểu và Người thân có thể điều chỉnh từ Excel hoặc Cài đặt.
+     - **Ô trống mờ (`seat-empty`):** Nếu dãy cuối không đủ 18 ghế hoặc có vị trí bị bỏ trống trong khoảng `1..maxPos`, hệ thống tự động vẽ ô nét đứt mờ thanh lịch để giữ nguyên bố cục đối xứng của hội trường.
    - **Động cơ Dữ liệu Excel Đa Tầng Siêu Tốc:**
      - *Tải mẫu tức thì (0ms):* Tải về file mẫu `Mau_Danh_Sach_Vinh_Danh_Tot_Nghiep_2026.xlsx` (kèm sheet `HuongDan`) ngay lập tức từ gói nhị phân Base64 nhúng sẵn, không cần mạng.
      - *Nhập file ngoại tuyến:* Nhúng đầy đủ thư viện SheetJS nội bộ, hỗ trợ đọc file `.xlsx`, `.xls`, `.csv` hoàn toàn offline.
@@ -153,7 +167,7 @@ Hệ thống đã tích hợp sẵn công cụ tự động **`Cap_Nhat_Danh_Sac
      * `Vị trí dãy NCS`: Nhập mã vị trí (ví dụ: `4-R`, `4-L`, `4`, `3, 4-R`, `3-R, 4-R`).
      * `Số dãy Người thân`: Nhập số dãy người thân (ví dụ: `5`, `6`, `3`).
    - **Các dòng tân khoa & tiến sĩ:**
-   - Cột `Vị trí ghế`: Số nguyên `1, 2, 3...` chỉ vị trí ô ghế trên sơ đồ (Dãy 5 gồm vị trí 1–20, Dãy 6 gồm vị trí 21–40...). **Để trống** đối với Tân Tiến sĩ (`TS1`).
+   - Cột `Vị trí ghế`: Số nguyên `1, 2, 3...` chỉ vị trí ô ghế trên sơ đồ (Dãy 5 gồm vị trí 1–18, Dãy 6 gồm vị trí 19–36...). **Để trống** đối với Tân Tiến sĩ (`TS1`).
    - Cột `Số ghế`: Nhãn số ghế thực tế hiển thị trên ô ghế và bảng vinh danh (ví dụ: `TS1`, hoặc `1, 3, 4, 5, 7, 8...` không cần liên tục).
    - Cột `Họ tên`: Họ và tên đầy đủ của người học.
    - Cột `Trình độ`: Chọn 1 trong 3 giá trị `Tiến sĩ`, `Thạc sĩ`, `Đại học` (tự động đổi khung vinh danh tương ứng).
@@ -200,14 +214,15 @@ Nếu bạn muốn tùy biến mã nguồn thủ công trước khi biên dịch
    - Tọa độ `y`: `0` là mép trên; `915` là sát mép đáy.
    - Tỷ lệ kích thước chuẩn: `width / height ≈ 3 : 1`.
 
-2. **Cấu hình quy mô lưới ghế động (`SEATS_PER_ROW`, `MAX_SEAT_ROWS`, `FAMILY_ROWS`):**
+2. **Cấu hình quy mô lưới ghế động (`SEATS_PER_ROW`, `SEATS_PER_SIDE`, `MAX_SEAT_ROWS`, `APP_STATE.config`):**
    - Toàn bộ số lượng ghế, nhãn số ghế và màu từng ghế được quyết định tự động 100% từ file Excel.
    - Các hằng số hình học lưới ghế nằm trong `<script>`:
      ```javascript
-     const SEATS_PER_ROW = 20;     // 10 ghế Khối Trái + 10 ghế Khối Phải mỗi dãy
-     const FIRST_SEAT_ROW = 5;     // Dãy ghế tân khoa bắt đầu từ Dãy 5
-     const FAMILY_ROWS = 5;        // 5 dãy ghế Người thân nối tiếp ngay sau dãy ghế cuối
-     const MAX_SEAT_ROWS = 16;     // Tối đa 16 dãy ghế (320 vị trí)
+     const SEATS_PER_ROW = 18;     // 9 ghế Khối Trái + 9 ghế Khối Phải mỗi dãy
+     const SEATS_PER_SIDE = SEATS_PER_ROW / 2;
+     const MAX_SEAT_ROWS = 20;     // Tối đa 20 dãy ghế (360 vị trí)
+     // APP_STATE.config.vipRows: mặc định 4; dãy tân khoa đầu = vipRows + 1
+     // APP_STATE.config.familyRows: mặc định 5; nối tiếp sau dãy tân khoa cuối
      ```
 
 3. **Điều chỉnh tốc độ ánh sáng chạy trên mũi tên:**
