@@ -4,6 +4,7 @@ Uses installed Microsoft Edge by default; set BROWSER_CHANNEL=chromium to use
 the Chromium installed by `python -m playwright install chromium`.
 """
 import os
+import base64
 from pathlib import Path
 import shutil
 import struct
@@ -169,6 +170,51 @@ class BrowserRegressions(unittest.TestCase):
         }''')
         self.page.wait_for_timeout(150)
         self.assertLessEqual(self.page.evaluate('window.canvasClears'), 1)
+
+    def test_fireworks_align_with_svg_after_rotation_and_fullscreen(self):
+        page = self.browser.new_page(viewport={'width': 1920, 'height': 1080})
+        try:
+            page.goto((ROOT / 'index.html').as_uri())
+            page.wait_for_function('window.dueGraduationApp')
+            page.keyboard.press('Space')
+            page.evaluate('dueGraduationApp.toggleEffects()')
+            # Let the disabled animation loop clear its previous frame once.
+            page.wait_for_timeout(100)
+            for fullscreen, width, height in [(False,1920,1080), (False,1080,1920),
+                                              (True,1080,1920), (True,2560,1080),
+                                              (True,1920,1080)]:
+                with self.subTest(fullscreen=fullscreen, width=width, height=height):
+                    page.set_viewport_size({'width': width, 'height': height})
+                    if fullscreen and not page.evaluate('!!document.fullscreenElement'):
+                        page.keyboard.press('f')
+                        page.wait_for_function('!!document.fullscreenElement')
+                    point = page.evaluate('''async () => {
+                      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                      const canvas = document.getElementById('fireworksCanvas');
+                      const ctx = canvas.getContext('2d');
+                      ctx.clearRect(0,0,1920,1080);
+                      ctx.globalCompositeOperation = 'source-over';
+                      ctx.fillStyle = '#ff00ff';
+                      ctx.fillRect(199,170,20,20);
+                      // Use SVG's actual screen transform as the independent reference.
+                      const svg = document.getElementById('masterSvg');
+                      const p = new DOMPoint(209,180).matrixTransform(svg.getScreenCTM());
+                      return {x:Math.round(p.x), y:Math.round(p.y)};
+                    }''')
+                    screenshot = base64.b64encode(page.screenshot()).decode('ascii')
+                    pixel = page.evaluate('''async ({screenshot,point}) => {
+                      const image = new Image();
+                      image.src = 'data:image/png;base64,' + screenshot;
+                      await image.decode();
+                      const sample = document.createElement('canvas');
+                      sample.width = sample.height = 1;
+                      const ctx = sample.getContext('2d');
+                      ctx.drawImage(image,point.x,point.y,1,1,0,0,1,1);
+                      return [...ctx.getImageData(0,0,1,1).data];
+                    }''', {'screenshot': screenshot, 'point': point})
+                    self.assertEqual(pixel, [255,0,255,255], (point,pixel))
+        finally:
+            page.close()
 
     def test_seat_click_is_handled_once(self):
         self.apply(rows_for(20))

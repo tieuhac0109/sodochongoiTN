@@ -8,6 +8,8 @@ Với cấu hình mặc định 4 dãy Đại biểu, Dãy 5 gồm vị trí 1�
 
 Số dãy tân khoa `R = ceil(maxPos / 18)`, tối đa 20 dãy (360 vị trí). Các dãy Người thân nối tiếp ngay sau dãy tân khoa cuối. Danh sách hiện tại có 232 vị trí: Dãy 5–17, còn 2 ô trống ở Dãy 17; cấu hình Excel hiện có 4 dãy Người thân nên nằm ở Dãy 18–21. Không cần sửa vị trí hoặc số ghế trong danh sách Excel.
 
+Khi trình chiếu trên màn hình dọc hoặc màn hình rộng, sơ đồ vẫn giữ tỷ lệ 16:9 và căn giữa. Canvas pháo hoa dùng `object-fit: contain` và căn giữa giống SVG, nên bám đúng khung vinh danh cả khi xoay màn hình hoặc bật/tắt toàn màn hình.
+
 ## Triển khai GitHub Pages
 
 Website: https://tieuhac0109.github.io/sodochongoiTN/
