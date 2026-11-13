@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+_site/
+test-results/
+playwright-report/
+~$*.xlsx
+Thumbs.db
+.DS_Store
